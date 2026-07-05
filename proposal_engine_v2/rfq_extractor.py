@@ -3,7 +3,7 @@ from typing import List
 
 from .models import ContactInfo, ProjectPhase, RFQExtract
 from .text_utils import clean_text, clean_line, get_lines, first_regex_match, collapse_spaces, truncate
-
+from .section_finder import get_section_text, get_section_bodies
 
 ADDRESS_WORDS = [
     "road", "rd", "street", "st", "avenue", "ave", "drive", "dr",
@@ -151,19 +151,12 @@ def extract_project_type(full_text: str) -> str:
 
 
 def extract_background(full_text: str) -> str:
+    section_text = get_section_text(full_text, "background")
+
+    if section_text:
+        return truncate(section_text, 1200)
+
     text = clean_text(full_text)
-
-    section_patterns = [
-        r"(?:project background|background|introduction|project overview|overview)\s*[:\n]\s*(.+?)(?=\n\s*(?:scope|services|deliverables|methodology|phase|requirements|fees|program|timeline)\b|\Z)",
-        r"(?:development description|project description)\s*[:\n]\s*(.+?)(?=\n\s*(?:scope|services|deliverables|methodology|phase|requirements|fees|program|timeline)\b|\Z)",
-    ]
-
-    for pattern in section_patterns:
-        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
-        if match:
-            value = collapse_spaces(match.group(1))
-            if len(value) > 40:
-                return truncate(value, 1200)
 
     useful_lines = []
     keywords = [
@@ -182,20 +175,12 @@ def extract_background(full_text: str) -> str:
 
 
 def extract_scope_summary(full_text: str) -> str:
-    text = clean_text(full_text)
+    section_text = get_section_text(full_text, "scope")
 
-    match = re.search(
-        r"(?:scope of works|scope|services required|required services)\s*[:\n]\s*(.+?)(?=\n\s*(?:deliverables|phase|fees|program|timeline|submission|requirements)\b|\Z)",
-        text,
-        re.IGNORECASE | re.DOTALL,
-    )
+    if section_text:
+        return truncate(section_text, 1200)
 
-    if match:
-        value = collapse_spaces(match.group(1))
-        if len(value) > 30:
-            return truncate(value, 1200)
-
-    return f"{extract_project_type(text)} based on the RFQ documentation."
+    return f"{extract_project_type(full_text)} based on the RFQ documentation."
 
 
 def extract_deliverables(full_text: str) -> List[str]:
@@ -261,7 +246,8 @@ def extract_phases(full_text: str) -> List[ProjectPhase]:
 
 
 def extract_authority_requirements(full_text: str) -> List[str]:
-    lines = get_lines(full_text)
+    section_text = get_section_text(full_text, "authority_requirements")
+    lines = get_lines(section_text or full_text)
 
     keywords = [
         "planning scheme", "development plan overlay", "dpo", "council",
@@ -282,7 +268,6 @@ def extract_authority_requirements(full_text: str) -> List[str]:
             break
 
     return results
-
 
 def extract_contact(full_text: str) -> ContactInfo:
     text = clean_text(full_text)
