@@ -7,7 +7,7 @@ from proposal_engine_v2 import (
     build_proposal_docx,
 )
 
-INPUT_FILE = "test_files/your_rfq_file.pdf"
+INPUT_FILE = "test_files/15 Avalon Rd - Hydrological Scope of Works (Phase 3 - 5) v1.pdf"
 OUTPUT_FILE = "outputs/V2_test_proposal.docx"
 
 os.makedirs("outputs", exist_ok=True)
